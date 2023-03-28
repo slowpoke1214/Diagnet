@@ -16,11 +16,17 @@ import Stepper from '@mui/material/Stepper';
 import Step from '@mui/material/Step';
 import StepLabel from '@mui/material/StepLabel';
 import StepContent from '@mui/material/StepContent';
+import Chip from '@mui/material/Chip';
+import Stack from '@mui/material/Stack';
 
 import LoadingButton from '@mui/lab/LoadingButton';
 
 import SensorsIcon from '@mui/icons-material/Sensors';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
+import HelpOutlineIcon from '@mui/icons-material/HelpOutline';
+import NumbersIcon from '@mui/icons-material/Numbers';
+import ManageHistoryIcon from '@mui/icons-material/ManageHistory';
+import InfoIcon from '@mui/icons-material/Info';
 import MenuIcon from '@mui/icons-material/Menu';
 
 import {json} from "stream/consumers";
@@ -125,18 +131,24 @@ async function scanner(scanResultsArray: any, setScanResultsArray: any, setLoadi
 
     const steps = [
         {
-            label: 'Scanning each discovered device for active services on open ports',
+            label: 'Scanning ports on discovered machines for active services',
             description:
-                'this scan takes a while.',
+                'This scan iterates through each discovered host, and checks ports 1-1024 for ' +
+                'any services that are operational, then saves relevant information associated with them',
         },
         {
-            label: 'Using NIST National Vulnerability Database (NVD) API to check for any known vulnerabilities',
-            description: `This takes approximately 6 seconds / service`,
+            label: 'Using NIST National Vulnerability Database (NVD) API to check for any known vulnerabilities using discovered information',
+            description: `Using the publicly available NIST NVD API, the discovered service information is being used to determine if any 
+            vulnerabilities exist. This step takes approximately 6 seconds / CPE`,
+        },
+        {
+            label: 'Report Generation',
+            description: `A report with the final suggestions according to the programs discoveries is created.`,
         },
     ];
 
 
-    const scanResult = (
+    const deviceScanResult = (
         <Paper>
             <div className={'paperTitle'}>
                 <Typography>
@@ -189,78 +201,157 @@ async function scanner(scanResultsArray: any, setScanResultsArray: any, setLoadi
         </Paper>
     );
 
-    await setScanResultsArray((prevState: any) => [...prevState, scanResult]);
-    setLoading(false);
+    await setScanResultsArray((prevState: any) => [...prevState, deviceScanResult]);
 
-    // const otherResult = (
-    //     <Paper>
-    //         <div className={'paperrTitle'}>
-    //             Title
-    //         </div>
-    //
-    //         <div className={'paperrContent'}>
-    //             <Accordion>
-    //                 <AccordionSummary
-    //                     expandIcon={<ExpandMoreIcon />}
-    //                     aria-controls="panel1a-content"
-    //                     id="panel1a-header"
-    //                 >
-    //                     <Typography>Network Discovery 2</Typography>
-    //                 </AccordionSummary>
-    //                 <AccordionDetails>
-    //                     <Typography>
-    //                         Lorem ipsum dolor sit amet, consectetur adipiscing elit. Suspendisse
-    //                         malesuada lacus ex, sit amet blandit leo lobortis eget.
-    //                     </Typography>
-    //                 </AccordionDetails>
-    //             </Accordion>
-    //         </div>
-    //     </Paper>
-    // );
-
-    // await setScanResultsArray((prevState: any) => [...prevState, otherResult]);
 
 
     /*
         ---------OS and PORT SCAN---------
     */
     try {
-        var ports = await window.electron.ipcRenderer.scanPorts(devices);
+        // var servicesResult = JSON.parse(await window.electron.ipcRenderer.scanPorts(devices));
+        var servicesResult = [{
+            "192.168.1.13": {
+                "os": ["Linux 4.15 - 5.6"],
+                "ports": [{
+                    "OpenSSH": {
+                        "CPE": "cpe:/a:openbsd:openssh:8.2p1",
+                        "port": "22",
+                        "version": "8.2p1 Ubuntu 4ubuntu0.5"
+                    }
+                }, {
+                    "nginx": {
+                        "CPE": "cpe:/a:igor_sysoev:nginx:1.18.0",
+                        "port": "80",
+                        "version": "1.18.0"
+                    }
+                }
+                ]
+            }, "192.168.1.69": {
+                "os": ["Linux 1.15 - 5.6"],
+                "ports": [{
+                    "OpenSSH": {
+                        "CPE": "cpe:/a:openbsd:openssh:8.2p1",
+                        "port": "69",
+                        "version": "8.2p1 Ubuntu 4ubuntu0.5"
+                    }
+                }, {
+                    "nginx": {
+                        "CPE": "cpe:/a:igor_sysoev:nginx:1.18.0",
+                        "port": "96",
+                        "version": "1.18.0"
+                    }
+                }
+                ]
+            }
+        }]
     } catch (e) {
         console.log('Error in scanning ports: ' + e);
     }
-    console.log(ports)
+    console.log(servicesResult)
+    setLoading(false);
 
-    // const portsScanResult = (
-    //     <Paper>
-    //         <div className={'paperTitle'}>
-    //             Title
-    //         </div>
-    //
-    //         <div className={'paperContent'}>
-    //             <Accordion>
-    //                 <AccordionSummary
-    //                     expandIcon={<ExpandMoreIcon />}
-    //                     aria-controls="panel1a-content"
-    //                     id="panel1a-header"
-    //                 >
-    //                     <Typography>Network Discovery 2 - Changed</Typography>
-    //                 </AccordionSummary>
-    //                 <AccordionDetails>
-    //                     <Typography>
-    //
-    //                         NEW CONTENT PLS
-    //                     </Typography>
-    //                 </AccordionDetails>
-    //             </Accordion>
-    //         </div>
-    //     </Paper>
-    // );
-    //
-    // await updateScanResult(scanResultsArray, setScanResultsArray, portsScanResult)
+    const portScanResult = (
+        <Paper elevation={5}>
+            <div className={'paperTitle'}>
+                <Typography>
+                    <b>Scan Type: </b>Network Scan <br/>
+                    <b>Date/Time: </b>{currDate} - {currTime} <br/>
+                    <b>Detected Devices: </b> {devices.length} <br/>
+                    <br/>
+                </Typography>
+            </div>
+
+            <div className={'primaryContent'}>
+                <div className={'scanStepper'}>
+                    <Stepper activeStep={0} orientation="vertical">
+                        {steps.map((step, index) => (
+                            <Step key={step.label}>
+                                <StepLabel
+                                    optional={
+                                        index === 2 ? (
+                                            <Typography variant="caption">Last step</Typography>
+                                        ) : null
+                                    }
+                                >
+                                    {step.label}
+                                </StepLabel>
+                                <StepContent>
+                                    <Typography>{step.description}</Typography>
+                                </StepContent>
+                            </Step>
+                        ))}
+                    </Stepper>
+                </div>
+
+                <div className={'scanContent'}>
+                    {devices.map((item: any, index: any) => {
+                        // Check for a match
+                        const matchingItem = servicesResult.find((result) => result[item]);
+                        const ports = matchingItem ? matchingItem[item].ports : [];
+                        const os = matchingItem?.[item]?.os?.[0] ?? 'N/A'; // Nullish Coalescing operator to ensure value is not null or undefined
+
+                        console.log('MatchingItem: ', JSON.stringify(matchingItem));
+                        console.log('nicee:', ports);
+                        console.log('OS: ', os);
+
+                        return (
+                            <Accordion expanded={true} key={index}>
+                                <AccordionSummary
+                                    expandIcon={<ExpandMoreIcon/>}
+                                    aria-controls={`panel${index}-content`}
+                                    id={`panel${index}-header`}
+                                >
+                                    <Typography variant={"h6"}>{item}</Typography>
+                                </AccordionSummary>
+                                <AccordionDetails>
+                                    <div>
+                                        <Stack direction="row" spacing={1} className={'serviceResultContentOS'}>
+                                            <Chip icon={<ManageHistoryIcon />} label="OS" variant="outlined" />
+                                            <Typography className={'serviceResultContentTypography'}>{os || '-'}</Typography>
+                                        </Stack>
+                                    </div>
+                                    <div>
+                                        {ports.map((portItem: any, portIndex: number) => {
+                                            const portName = Object.keys(portItem)[0];
+                                            const portData = portItem[portName];
+                                            return (
+                                                <Paper elevation={6} className={'serviceResultsPaper'} key={portIndex}>
+                                                    <div className={'serviceResultsContent'}>
+                                                        <Stack direction="row" spacing={1} className={'serviceResultContentPortname'}>
+                                                            <Chip icon={<InfoIcon />} label="Service Name" variant="outlined" />
+                                                            <Typography className={'serviceResultContentTypography'}>{portName}</Typography>
+                                                        </Stack>
+                                                        <Stack direction="row" spacing={2} className={'serviceResultContentCPE'}>
+                                                            <Chip icon={<HelpOutlineIcon />} label="CPE" variant="outlined" />
+                                                            <Typography className={'serviceResultContentTypography'}>{portData.CPE || '-'}</Typography>
+                                                        </Stack>
+                                                        <Stack direction="row" spacing={3} className={'serviceResultContentPort'}>
+                                                            <Chip icon={<NumbersIcon />} label="Port" variant="outlined" />
+                                                            <Typography className={'serviceResultContentTypography'}>{portData.port || '-'}</Typography>
+                                                        </Stack>
+                                                        <Stack direction="row" spacing={1} className={'serviceResultContentVersion'}>
+                                                            <Chip icon={<ManageHistoryIcon />} label="Version" variant="outlined" />
+                                                            <Typography className={'serviceResultContentTypography'}>{portData.version || '-'}</Typography>
+                                                        </Stack>
+                                                    </div>
+                                                </Paper>
+                                            );
+                                        })}
+                                    </div>
+                                </AccordionDetails>
+                            </Accordion>
+                        );
+                    })}
+                </div>
+            </div>
+        </Paper>
+    );
+
+    await updateScanResult(scanResultsArray, setScanResultsArray, portScanResult);
 
     /*
-        ---------SERVICE SCAN---------
+        ---------NIST NVD API---------
     */
     // const services = await window.electron.ipcRenderer.scanServices();
     // console.log(services)
@@ -290,7 +381,10 @@ async function updateScanResult(scanResultsArray: any[], setScanResultsArray, sc
                 if (index === prevState.length - 1) {
                     return scanResultToUpdate;
                 } else {
-                    return scanResult;
+                    const lastIndex = prevState.length - 1;
+                    const updatedArrayy = [...prevState];
+                    updatedArray[lastIndex] = scanResultToUpdate;
+                    return updatedArrayy;
                 }
             });
             return updatedArray.reverse();

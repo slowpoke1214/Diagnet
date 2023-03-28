@@ -50,6 +50,38 @@
   /*background: whitesmoke;*/
 }
 
+.serviceResultsPaper {
+  margin: 10px;
+}
+
+.serviceResultsContent {
+ padding: 5px;
+}
+
+.serviceResultContentPortname {
+  margin-bottom: 5px;
+}
+
+.serviceResultContentCPE {
+  margin-bottom: 5px;
+}
+
+.serviceResultContentPort {
+  margin-bottom: 5px;
+}
+
+.serviceResultContentVersion {
+  margin-bottom: 5px;
+}
+
+.serviceResultContentOS {
+  margin-left: 10px;
+}
+
+.serviceResultContentTypography {
+  align-self: center;
+}
+
 body {
   /*position: relative;*/
   /*color: white;*/
