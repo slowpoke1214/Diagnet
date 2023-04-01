@@ -149,7 +149,7 @@ async function scanner(scanResultsArray: any, setScanResultsArray: any, setLoadi
 
 
     const deviceScanResult = (
-        <Paper>
+        <Paper elevation={3}>
             <div className={'paperTitle'}>
                 <Typography>
                     <b>Scan Type: </b>Network Scan <br/>
@@ -183,7 +183,7 @@ async function scanner(scanResultsArray: any, setScanResultsArray: any, setLoadi
 
                 <div className={'scanContent'}>
                     {devices.map((item: any, index: any) => (
-                        <Accordion key={index}>
+                        <Accordion key={index} elevation={3}>
                             <AccordionSummary
                                 expandIcon={<ExpandMoreIcon/>}
                                 aria-controls={`panel${index}-content`}
@@ -248,8 +248,8 @@ async function scanner(scanResultsArray: any, setScanResultsArray: any, setLoadi
     } catch (e) {
         console.log('Error in scanning ports: ' + e);
     }
-    console.log(servicesResult)
-    setLoading(false);
+    console.log('Entire Output:', servicesResult)
+    // setLoading(false);
 
     const portScanResult = (
         <Paper elevation={5}>
@@ -287,16 +287,16 @@ async function scanner(scanResultsArray: any, setScanResultsArray: any, setLoadi
                 <div className={'scanContent'}>
                     {devices.map((item: any, index: any) => {
                         // Check for a match
-                        const matchingItem = servicesResult.find((result) => result[item]);
+                        const matchingItem: any = servicesResult.find((result) => result[item]);
                         const ports = matchingItem ? matchingItem[item].ports : [];
                         const os = matchingItem?.[item]?.os?.[0] ?? 'N/A'; // Nullish Coalescing operator to ensure value is not null or undefined
 
-                        console.log('MatchingItem: ', JSON.stringify(matchingItem));
-                        console.log('nicee:', ports);
-                        console.log('OS: ', os);
+                        // console.log('MatchingItem: ', JSON.stringify(matchingItem));
+                        // console.log('nicee:', ports);
+                        // console.log('OS: ', os);
 
                         return (
-                            <Accordion expanded={true} key={index}>
+                            <Accordion defaultExpanded={true} key={index}>
                                 <AccordionSummary
                                     expandIcon={<ExpandMoreIcon/>}
                                     aria-controls={`panel${index}-content`}
@@ -353,8 +353,15 @@ async function scanner(scanResultsArray: any, setScanResultsArray: any, setLoadi
     /*
         ---------NIST NVD API---------
     */
-    // const services = await window.electron.ipcRenderer.scanServices();
-    // console.log(services)
+
+    // TODO:
+    // - When displaying CVE ID, add href to the https://nvd.nist.gov/vuln/detail/ + CVE_ID
+    // -
+
+    const CVEInfo = await window.electron.ipcRenderer.scanCVE(JSON.stringify(servicesResult));
+    console.log('CVE INFO!: ',CVEInfo)
+
+    setLoading(false);
 }
 
 async function updateScanResult(scanResultsArray: any[], setScanResultsArray, scanResultToUpdate: any) {

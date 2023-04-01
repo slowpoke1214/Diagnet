@@ -23,7 +23,7 @@ const electronHandler = {
     },
     scanDevices: () => ipcRenderer.invoke('scanDevices'),
     scanPorts: (devices: string) => ipcRenderer.invoke('scanPorts', devices),
-    scanServices: () => ipcRenderer.invoke('scanServices'),
+    scanCVE: (CVEDeviceInfo: string) => ipcRenderer.invoke('scanCVE', CVEDeviceInfo),
 
   },
 };

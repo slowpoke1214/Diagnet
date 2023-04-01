@@ -13,7 +13,7 @@ import { app, BrowserWindow, shell, ipcMain } from 'electron';
 import { autoUpdater } from 'electron-updater';
 import log from 'electron-log';
 import MenuBuilder from './menu';
-import { scanDevices, scanPorts, scanServices } from "./scanner";
+import { scanDevices, scanPorts, scanCVE } from "./scanner";
 import { resolveHtmlPath } from './util';
 
 class AppUpdater {
@@ -140,7 +140,7 @@ app
   .then(() => {
     ipcMain.handle('scanDevices', scanDevices);
     ipcMain.handle('scanPorts', scanPorts);
-    ipcMain.handle('scanServices', scanServices);
+    ipcMain.handle('scanCVE', scanCVE);
     createWindow();
     app.on('activate', () => {
       // On macOS it's common to re-create a window in the app when the
