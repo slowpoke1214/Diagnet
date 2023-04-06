@@ -3,6 +3,8 @@ import icon from '../../assets/icon.svg';
 import './App.css';
 
 import Button from '@mui/material/Button';
+import List from '@mui/material/List';
+import ListItem from '@mui/material/ListItem';
 import Paper from '@mui/material/Paper';
 import Accordion from '@mui/material/Accordion';
 import AccordionSummary from '@mui/material/AccordionSummary';
@@ -18,6 +20,7 @@ import StepLabel from '@mui/material/StepLabel';
 import StepContent from '@mui/material/StepContent';
 import Chip from '@mui/material/Chip';
 import Stack from '@mui/material/Stack';
+import Chart from 'chart.js/auto'
 
 import LoadingButton from '@mui/lab/LoadingButton';
 
@@ -27,6 +30,8 @@ import HelpOutlineIcon from '@mui/icons-material/HelpOutline';
 import NumbersIcon from '@mui/icons-material/Numbers';
 import ManageHistoryIcon from '@mui/icons-material/ManageHistory';
 import InfoIcon from '@mui/icons-material/Info';
+import DescriptionIcon from '@mui/icons-material/Description';
+import ScoreIcon from '@mui/icons-material/Score';
 import MenuIcon from '@mui/icons-material/Menu';
 
 import {json} from "stream/consumers";
@@ -118,13 +123,6 @@ async function scanner(scanResultsArray: any, setScanResultsArray: any, setLoadi
     //  in it, then when the second phase of port scanning is done you
     //  can target the unique ID and add to it
 
-    /*
-        ---------DEVICE SCAN---------
-    */
-    // Run device scan
-    const devices = await window.electron.ipcRenderer.scanDevices();
-    console.log(devices);
-
     // Get current date and time
     const currDate = new Date().toLocaleDateString();
     const currTime = new Date().toLocaleTimeString();
@@ -146,6 +144,51 @@ async function scanner(scanResultsArray: any, setScanResultsArray: any, setLoadi
             description: `A report with the final suggestions according to the programs discoveries is created.`,
         },
     ];
+
+    const startingResult = (
+        <Paper elevation={3}>
+            <div className={'paperTitle'}>
+                <Typography>
+                    <b>Scan Type: </b>Network Scan <br/>
+                    <b>Date/Time: </b>{currDate} - {currTime} <br/>
+                    <br/>
+                </Typography>
+            </div>
+
+            <div className={'primaryContent'}>
+                <div className={'scanStepper'}>
+                    <Stepper activeStep={0} orientation="vertical">
+                        {steps.map((step, index) => (
+                            <Step key={step.label}>
+                                <StepLabel
+                                    optional={
+                                        index === 2 ? (
+                                            <Typography variant="caption">Last step</Typography>
+                                        ) : null
+                                    }
+                                >
+                                    {step.label}
+                                </StepLabel>
+                                <StepContent>
+                                    <Typography>{step.description}</Typography>
+                                </StepContent>
+                            </Step>
+                        ))}
+                    </Stepper>
+                </div>
+            </div>
+        </Paper>
+    );
+
+    // await setScanResultsArray((prevState: any) => [...prevState, startingResult]);
+    await updateScanResult(scanResultsArray, setScanResultsArray, startingResult);
+
+    /*
+        ---------DEVICE SCAN---------
+    */
+    // Run device scan
+    const devices = await window.electron.ipcRenderer.scanDevices();
+    console.log(devices);
 
 
     const deviceScanResult = (
@@ -201,16 +244,17 @@ async function scanner(scanResultsArray: any, setScanResultsArray: any, setLoadi
         </Paper>
     );
 
-    await setScanResultsArray((prevState: any) => [...prevState, deviceScanResult]);
+    await updateScanResult(scanResultsArray, setScanResultsArray, deviceScanResult);
 
 
 
     /*
         ---------OS and PORT SCAN---------
     */
+    let servicesResult: any[] = [];  // Define services result array
     try {
         // var servicesResult = JSON.parse(await window.electron.ipcRenderer.scanPorts(devices));
-        var servicesResult = [{
+        servicesResult = [{
             "192.168.1.13": {
                 "os": ["Linux 4.15 - 5.6"],
                 "ports": [{
@@ -264,7 +308,7 @@ async function scanner(scanResultsArray: any, setScanResultsArray: any, setLoadi
 
             <div className={'primaryContent'}>
                 <div className={'scanStepper'}>
-                    <Stepper activeStep={0} orientation="vertical">
+                    <Stepper activeStep={1} orientation="vertical">
                         {steps.map((step, index) => (
                             <Step key={step.label}>
                                 <StepLabel
@@ -358,14 +402,233 @@ async function scanner(scanResultsArray: any, setScanResultsArray: any, setLoadi
     // - When displaying CVE ID, add href to the https://nvd.nist.gov/vuln/detail/ + CVE_ID
     // -
 
-    const CVEInfo = await window.electron.ipcRenderer.scanCVE(JSON.stringify(servicesResult));
+    let CVEInfo = await window.electron.ipcRenderer.scanCVE(JSON.stringify(servicesResult));
+    CVEInfo = JSON.parse(CVEInfo);
     console.log('CVE INFO!: ',CVEInfo)
+
+    const data = [
+        { year: 2010, count: 10 },
+        { year: 2011, count: 20 },
+        { year: 2012, count: 15 },
+        { year: 2013, count: 25 },
+        { year: 2014, count: 22 },
+        { year: 2015, count: 30 },
+        { year: 2016, count: 28 },
+    ];
+
+    const cveScanResult = (
+        <Paper elevation={5}>
+            <div className={'paperTitle'}>
+                <Typography>
+                    <b>Scan Type: </b>Network Scan <br/>
+                    <b>Date/Time: </b>{currDate} - {currTime} <br/>
+                    <b>Detected Devices: </b> {devices.length} <br/>
+                    <br/>
+                </Typography>
+            </div>
+
+            <div className={'primaryContent'}>
+                <div className={'scanStepper'}>
+                    <Stepper activeStep={2} orientation="vertical">
+                        {steps.map((step, index) => (
+                            <Step key={step.label}>
+                                <StepLabel
+                                    optional={
+                                        index === 2 ? (
+                                            <Typography variant="caption">Last step</Typography>
+                                        ) : null
+                                    }
+                                >
+                                    {step.label}
+                                </StepLabel>
+                                <StepContent>
+                                    <Typography>{step.description}</Typography>
+                                </StepContent>
+                            </Step>
+                        ))}
+                    </Stepper>
+                </div>
+
+                <div className={'scanContent'}>
+                    {devices.map((item: any, index: any) => {
+                        // Check for a match
+                        const matchingItem: any = servicesResult.find((result) => result[item]);
+                        const ports = matchingItem ? matchingItem[item].ports : [];
+                        const os = matchingItem?.[item]?.os?.[0] ?? 'N/A'; // Nullish Coalescing operator to ensure value is not null or undefined
+
+                        // console.log('MatchingItem: ', JSON.stringify(matchingItem));
+                        // console.log('nicee:', ports);
+                        // console.log('OS: ', os);
+
+                        return (
+                            <Accordion defaultExpanded={true} key={index}>
+                                <AccordionSummary
+                                    expandIcon={<ExpandMoreIcon/>}
+                                    aria-controls={`panel${index}-content`}
+                                    id={`panel${index}-header`}
+                                >
+                                    <Typography variant={"h6"}>{item}</Typography>
+                                </AccordionSummary>
+                                <AccordionDetails>
+                                    <div>
+                                        <Stack direction="row" spacing={1} className={'serviceResultContentOS'}>
+                                            <Chip icon={<ManageHistoryIcon />} label="OS" variant="outlined" />
+                                            <Typography className={'serviceResultContentTypography'}>{os || '-'}</Typography>
+                                        </Stack>
+                                    </div>
+                                    <div>
+                                        {ports.map((portItem: any, portIndex: number) => {
+                                            const portName = Object.keys(portItem)[0];
+                                            const portData = portItem[portName];
+                                            return (
+                                                <Paper elevation={6} className={'serviceResultsPaper'} key={portIndex}>
+                                                    <div className={'serviceResultsContent'}>
+                                                        <Stack direction="row" spacing={1} className={'serviceResultContentPortname'}>
+                                                            <Chip icon={<InfoIcon />} label="Service Name" variant="outlined" />
+                                                            <Typography className={'serviceResultContentTypography'}>{portName}</Typography>
+                                                        </Stack>
+                                                        <Stack direction="row" spacing={2} className={'serviceResultContentCPE'}>
+                                                            <Chip icon={<HelpOutlineIcon />} label="CPE" variant="outlined" />
+                                                            <Typography className={'serviceResultContentTypography'}>{portData.CPE || '-'}</Typography>
+                                                        </Stack>
+                                                        <Stack direction="row" spacing={3} className={'serviceResultContentPort'}>
+                                                            <Chip icon={<NumbersIcon />} label="Port" variant="outlined" />
+                                                            <Typography className={'serviceResultContentTypography'}>{portData.port || '-'}</Typography>
+                                                        </Stack>
+                                                        <Stack direction="row" spacing={1} className={'serviceResultContentVersion'}>
+                                                            <Chip icon={<ManageHistoryIcon />} label="Version" variant="outlined" />
+                                                            <Typography className={'serviceResultContentTypography'}>{portData.version || '-'}</Typography>
+                                                        </Stack>
+                                                        <Accordion defaultExpanded={true} key={index} elevation={5}>
+                                                            <AccordionSummary
+                                                                expandIcon={<ExpandMoreIcon/>}
+                                                                aria-controls={`panel${index}-content`}
+                                                                id={`panel${index}-header`}
+                                                            >
+                                                                <Typography variant={"h6"}>CVE Results</Typography>
+                                                            </AccordionSummary>
+                                                            <AccordionDetails>
+                                                                <List
+                                                                    sx={{
+                                                                        width: '100%',
+                                                                        maxWidth: 500,
+                                                                        bgcolor: 'background.paper',
+                                                                        position: 'relative',
+                                                                        overflow: 'auto',
+                                                                        maxHeight: 300,
+                                                                        '& ul': { padding: 0 },
+                                                                    }}
+                                                                >
+                                                                    {CVEInfo.map((cveItem: any, cveIndex: number) => {
+                                                                        for (const service of cveItem.cveResults) {
+                                                                            if (item == cveItem.address) {
+                                                                                if (service.serviceName == portName) {
+                                                                                    // Service is the same, display all CVE information collected
+                                                                                    const cveTotalResults = service.cveTotalResults;
+
+                                                                                    return (
+                                                                                        <div
+                                                                                            className={'cveResultDiv'}
+                                                                                            key={cveIndex}>
+                                                                                            <Stack direction="row" spacing={3} className={'cveResults'}>
+                                                                                                <Chip icon={<NumbersIcon/>} label="Number of CVEs" variant="outlined"/>
+                                                                                                <Typography
+                                                                                                    className={'serviceResultContentTypography'}>{cveTotalResults || '0'}
+                                                                                                </Typography>
+                                                                                            </Stack>
+                                                                                            {service.cveData.map((cve: any, cveIndex: number) => (
+                                                                                                <ListItem
+                                                                                                    key={cveIndex}>
+                                                                                                    <Accordion
+                                                                                                        key={cveIndex}>
+                                                                                                        <AccordionSummary
+                                                                                                            expandIcon={
+                                                                                                                <ExpandMoreIcon/>}
+                                                                                                            aria-controls={`panel${index}-content`}
+                                                                                                            id={`panel${index}-header`}
+                                                                                                        >
+                                                                                                            <Typography>
+                                                                                                                <b>CVE ID: </b>
+                                                                                                                {cve.cveID}
+                                                                                                            </Typography>
+                                                                                                        </AccordionSummary>
+                                                                                                        <AccordionDetails>
+                                                                                                            <Stack direction="row" spacing={3} className={'cveResultScore'}>
+                                                                                                                <Chip
+                                                                                                                    icon={<NumbersIcon/>}
+                                                                                                                    label="Base Score"
+                                                                                                                    variant="outlined"
+                                                                                                                    style={{
+                                                                                                                        backgroundColor:
+                                                                                                                        parseFloat(cve.cveBaseScore) >= 0.0 && parseFloat(cve.cveBaseScore) < 4
+                                                                                                                            ? 'green'
+                                                                                                                            : parseFloat(cve.cveBaseScore) >= 4 && parseFloat(cve.cveBaseScore) < 7
+                                                                                                                            ? 'yellow'
+                                                                                                                            : parseFloat(cve.cveBaseScore) >= 7 && parseFloat(cve.cveBaseScore) < 9
+                                                                                                                            ? 'red'
+                                                                                                                            : parseFloat(cve.cveBaseScore) >= 9 && parseFloat(cve.cveBaseScore) <= 10
+                                                                                                                            ? 'black'
+                                                                                                                            : '',
+                                                                                                                        color:
+                                                                                                                        parseFloat(cve.cveBaseScore) >= 0.0 && parseFloat(cve.cveBaseScore) < 4
+                                                                                                                            ? 'white'
+                                                                                                                            : parseFloat(cve.cveBaseScore) >= 4 && parseFloat(cve.cveBaseScore) < 7
+                                                                                                                            ? 'black'
+                                                                                                                            : parseFloat(cve.cveBaseScore) >= 7 && parseFloat(cve.cveBaseScore) < 9
+                                                                                                                            ? 'white'
+                                                                                                                            : parseFloat(cve.cveBaseScore) >= 9 && parseFloat(cve.cveBaseScore) <= 10
+                                                                                                                            ? 'white'
+                                                                                                                            : 'black'
+                                                                                                                    }}
+                                                                                                                />
+                                                                                                                <Typography
+                                                                                                                    className={'serviceResultContentTypography'}>{cve.cveBaseScore || '-'}
+                                                                                                                </Typography>
+                                                                                                            </Stack>
+                                                                                                            <br/>
+                                                                                                            <Chip icon={<DescriptionIcon/>} label="Description" variant="outlined"/>
+                                                                                                            <br/>
+                                                                                                            <Typography>
+                                                                                                                {cve.cveDesc}
+                                                                                                            </Typography>
+                                                                                                            </AccordionDetails>
+                                                                                                    </Accordion>
+                                                                                                </ListItem>
+                                                                                            ))}
+                                                                                        </div>
+                                                                                    );
+                                                                                }
+                                                                            }
+                                                                        }
+                                                                    })}
+                                                                </List>
+                                                            </AccordionDetails>
+                                                        </Accordion>
+                                                    </div>
+                                                </Paper>
+                                            );
+                                        })}
+                                    </div>
+                                </AccordionDetails>
+                            </Accordion>
+                        );
+                    })}
+                </div>
+                // Create graphs
+
+            </div>
+        </Paper>
+    );
+
+    await updateScanResult(scanResultsArray, setScanResultsArray, cveScanResult);
+
+    // Create graphs
 
     setLoading(false);
 }
 
-async function updateScanResult(scanResultsArray: any[], setScanResultsArray, scanResultToUpdate: any) {
-    await setScanResultsArray(prevState => {
+async function updateScanResult(scanResultsArray: any[], setScanResultsArray: any, scanResultToUpdate: any) {
+    await setScanResultsArray((prevState: any[]) => {
         if (prevState.length === 0) {
             // If scanResultsArray is empty, add the new scan result directly to the array
             return [scanResultToUpdate];

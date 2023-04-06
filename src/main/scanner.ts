@@ -3337,13 +3337,78 @@ export async function scanCVE(event: any, CVEDeviceInfo: string) : Promise<unkno
 
     // TODO: Parse results and return new object with only:
     // - address
-    // - CVE.totalResults
-    // - CVE.result.CVE_Items.cve.CVE_data_meta.ID
-    // - CVE.result.CVE_Items.impact.baseMetricV3.cvssV3.baseScore
-    // - CVE.result.CVE_Items.cve.description.description_data (if lang == 'en') then get .value
+    // - CVEData.totalResults
+    // - CVEData.result.CVE_Items.cve.CVE_data_meta.ID
+    // - CVEData.result.CVE_Items.impact.baseMetricV3.cvssV3.baseScore
+    // - CVEData.result.CVE_Items.cve.description.description_data (if lang == 'en') then get .value
     // -
 
-    return JSON.stringify(results);
+    const mainResults = [];
+
+    for (const items of testResults) {
+        // Iterate through each IP address
+        console.log('NICE: ', items.address);
+        const addr = items.address ?? null;
+        const cveServicesArr = [];
+
+        for (const serviceData of items.data) {
+            // Iterate through each services CVE information
+            console.log('ServiceNAME: ', serviceData.serviceName);
+            const cveDataArr = [];
+
+            const serviceName = serviceData.serviceName ?? null;
+            const numResults = serviceData.CVEData.totalResults ?? null;
+
+            for (const cveItems of serviceData.CVEData.result.CVE_Items) {
+                // Iterate through each CVE
+
+                const cveID = cveItems.cve.CVE_data_meta.ID ?? null;
+                let cveScore = null;
+                // const cveScore = cveItems.impact.baseMetricV3.cvssV3.baseScore ?? null;
+                if (cveItems.impact.baseMetricV3) {
+                    cveScore = cveItems.impact.baseMetricV3.cvssV3.baseScore;
+                }  else if (cveItems.impact.baseMetricV2) {
+                    cveScore = cveItems.impact.baseMetricV2.cvssV2.baseScore;
+                }
+                const cveDesc = cveItems.cve.description.description_data[0].value ?? null;
+
+                cveDataArr.push({
+                    "cveID": cveID,
+                    "cveBaseScore": cveScore,
+                    "cveDesc": cveDesc
+                })
+            }
+            // Add the service and its CVE info to the array
+            cveServicesArr.push({
+                "serviceName": serviceName,
+                "cveTotalResults": numResults,
+                "cveData": cveDataArr
+            })
+        }
+        // Add the address with its services to the results array
+        mainResults.push({
+            "address": addr,
+            "cveResults": cveServicesArr
+        })
+    }
+
+    console.log('MAIN OUTPUT: ', JSON.stringify(mainResults));
+
+    const CVEResult = {
+        "address": "192.168.1.13",
+        "cveResults": [{
+            "serviceName": "OpenSSH",
+            "cveTotalResults": "9",
+            "cveData": [{
+                "cveID": "10283091203",
+                "cveBaseScore": "8",
+                "cveDesc": "This is da CVE"
+            }]
+
+        }]
+    };
+    const CVEResultArr = [];
+    return JSON.stringify(mainResults);
 }
 
 async function getLocalIP() {
