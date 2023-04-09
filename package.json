@@ -108,6 +108,7 @@
     "node-nmap": "^4.0.0",
     "ping": "^0.4.4",
     "react": "^18.2.0",
+    "react-chartjs-2": "^5.2.0",
     "react-dom": "^18.2.0",
     "react-router-dom": "^6.8.1"
   },

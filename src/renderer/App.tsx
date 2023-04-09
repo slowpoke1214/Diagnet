@@ -21,6 +21,8 @@ import StepContent from '@mui/material/StepContent';
 import Chip from '@mui/material/Chip';
 import Stack from '@mui/material/Stack';
 import Chart from 'chart.js/auto'
+import { CategoryScale } from "chart.js";
+import { Pie } from "react-chartjs-2";
 
 import LoadingButton from '@mui/lab/LoadingButton';
 
@@ -38,6 +40,8 @@ import {json} from "stream/consumers";
 import {useState} from "react";
 // import Card from '@mui/material/Card';
 
+Chart.register(CategoryScale);
+
 function Main() {
     const [scanResultsArray, setScanResultsArray] = useState([]);
     const [loadingBool, setLoading] = useState(false);
@@ -46,6 +50,7 @@ function Main() {
     // Test variables
     const currDate = new Date().toLocaleDateString();
     const currTime = new Date().toLocaleTimeString();
+
     const devices = [
         '192.168.1.1',   '192.168.1.11',
         '192.168.1.69',  '192.168.1.103',
@@ -95,7 +100,7 @@ function Main() {
                           }
                       }}
                   >
-                      <span>Start Scan</span>
+                      <span>{loadingBool ? 'Scanning' : 'Start Scan'}</span>
                   </LoadingButton>
               </div>
           </div>
@@ -123,25 +128,31 @@ async function scanner(scanResultsArray: any, setScanResultsArray: any, setLoadi
     //  in it, then when the second phase of port scanning is done you
     //  can target the unique ID and add to it
 
+    // For default expanded accordions, using hooks and states
+    // const [expandedItem, setExpandedItem] = useState(null);
+    //
+    // const handleAccordionChange = (index) => (event: any, isExpanded: any) => {
+    //     setExpandedItem(isExpanded ? index : null);
+    // };
+
     // Get current date and time
     const currDate = new Date().toLocaleDateString();
     const currTime = new Date().toLocaleTimeString();
+    const startTime = new Date();
 
     const steps = [
         {
             label: 'Scanning ports on discovered machines for active services',
             description:
-                'This scan iterates through each discovered host, and checks ports 1-1024 for ' +
-                'any services that are operational, then saves relevant information associated with them',
+                'This scan iterates through each discovered host, and checks ports 1-1024 for active services.',
         },
         {
-            label: 'Using NIST National Vulnerability Database (NVD) API to check for any known vulnerabilities using discovered information',
-            description: `Using the publicly available NIST NVD API, the discovered service information is being used to determine if any 
-            vulnerabilities exist. This step takes approximately 6 seconds / CPE`,
+            label: 'Use NIST National Vulnerability Database (NVD) API for known vulnerabilities',
+            description: `Using the publicly available NIST NVD API with discovered service information. This step takes approximately 6 seconds / CPE.`,
         },
         {
-            label: 'Report Generation',
-            description: `A report with the final suggestions according to the programs discoveries is created.`,
+            label: 'Network Recommendation',
+            description: `Network recommendations have been generated at the bottom.`,
         },
     ];
 
@@ -188,8 +199,7 @@ async function scanner(scanResultsArray: any, setScanResultsArray: any, setLoadi
     */
     // Run device scan
     const devices = await window.electron.ipcRenderer.scanDevices();
-    console.log(devices);
-
+    console.log('---- Devices From IPC ----', devices);
 
     const deviceScanResult = (
         <Paper elevation={3}>
@@ -253,7 +263,7 @@ async function scanner(scanResultsArray: any, setScanResultsArray: any, setLoadi
     */
     let servicesResult: any[] = [];  // Define services result array
     try {
-        // var servicesResult = JSON.parse(await window.electron.ipcRenderer.scanPorts(devices));
+        // servicesResult = JSON.parse(await window.electron.ipcRenderer.scanPorts(devices));
         servicesResult = [{
             "192.168.1.13": {
                 "os": ["Linux 4.15 - 5.6"],
@@ -287,13 +297,27 @@ async function scanner(scanResultsArray: any, setScanResultsArray: any, setLoadi
                     }
                 }
                 ]
+            }, "192.168.1.104": {
+                "ports": [
+                    {
+                        "Dropbear sshd": {
+                            "CPE": null,
+                            "version": null,
+                            "port": "22"
+                        }
+                    }
+                ],
+                "os": [
+                    "OpenWrt Chaos Calmer 15.05 (Linux 3.18) or Designated Driver (Linux 4.1 or 4.4)"
+                ]
             }
         }]
+
     } catch (e) {
         console.log('Error in scanning ports: ' + e);
     }
-    console.log('Entire Output:', servicesResult)
     // setLoading(false);
+    console.log('---- Services Result from IPC ----', servicesResult);
 
     const portScanResult = (
         <Paper elevation={5}>
@@ -335,12 +359,8 @@ async function scanner(scanResultsArray: any, setScanResultsArray: any, setLoadi
                         const ports = matchingItem ? matchingItem[item].ports : [];
                         const os = matchingItem?.[item]?.os?.[0] ?? 'N/A'; // Nullish Coalescing operator to ensure value is not null or undefined
 
-                        // console.log('MatchingItem: ', JSON.stringify(matchingItem));
-                        // console.log('nicee:', ports);
-                        // console.log('OS: ', os);
-
                         return (
-                            <Accordion defaultExpanded={true} key={index}>
+                            <Accordion key={index}>
                                 <AccordionSummary
                                     expandIcon={<ExpandMoreIcon/>}
                                     aria-controls={`panel${index}-content`}
@@ -399,30 +419,33 @@ async function scanner(scanResultsArray: any, setScanResultsArray: any, setLoadi
     */
 
     // TODO:
-    // - When displaying CVE ID, add href to the https://nvd.nist.gov/vuln/detail/ + CVE_ID
     // -
 
     let CVEInfo = await window.electron.ipcRenderer.scanCVE(JSON.stringify(servicesResult));
     CVEInfo = JSON.parse(CVEInfo);
-    console.log('CVE INFO!: ',CVEInfo)
+    console.log('---- CVE Results from IPC ---- ',CVEInfo);
+    const randomNum = () => Math.floor(Math.random() * (235 - 52 + 1) + 52);
+    const randomRGB = () => `rgb(${randomNum()}, ${randomNum()}, ${randomNum()})`;
 
-    const data = [
-        { year: 2010, count: 10 },
-        { year: 2011, count: 20 },
-        { year: 2012, count: 15 },
-        { year: 2013, count: 25 },
-        { year: 2014, count: 22 },
-        { year: 2015, count: 30 },
-        { year: 2016, count: 28 },
-    ];
+    // Time Management
+    const endTime = new Date();
+    const timeDiff = endTime.getTime() - startTime.getTime();
+    // Convert time difference to seconds, minutes, and hours
+    const seconds = Math.floor(timeDiff / 1000);
+    const minutes = Math.floor(seconds / 60);
+    const hours = Math.floor(minutes / 60);
+
+    // const labels = ["January", "February", "March", "April", "May", "June"];
+    var ipChartArr: { ip: any; totalCve: number; }[] = [];
 
     const cveScanResult = (
-        <Paper elevation={5}>
+        <Paper elevation={6}>
             <div className={'paperTitle'}>
                 <Typography>
                     <b>Scan Type: </b>Network Scan <br/>
                     <b>Date/Time: </b>{currDate} - {currTime} <br/>
                     <b>Detected Devices: </b> {devices.length} <br/>
+                    <b>Scan Time: </b> {`Scan time: ${hours} hours, ${minutes % 60} minutes, ${seconds % 60} seconds`} <br/>
                     <br/>
                 </Typography>
             </div>
@@ -456,12 +479,19 @@ async function scanner(scanResultsArray: any, setScanResultsArray: any, setLoadi
                         const ports = matchingItem ? matchingItem[item].ports : [];
                         const os = matchingItem?.[item]?.os?.[0] ?? 'N/A'; // Nullish Coalescing operator to ensure value is not null or undefined
 
-                        // console.log('MatchingItem: ', JSON.stringify(matchingItem));
-                        // console.log('nicee:', ports);
-                        // console.log('OS: ', os);
+                        const randomNum = () => Math.floor(Math.random() * (235 - 52 + 1) + 52);
+                        const randomRGB = () => `rgb(${randomNum()}, ${randomNum()}, ${randomNum()})`;
+
+                        var serviceChartArr: { serviceName: any; totalResults: any; }[] = [];
+                        let pieServiceVulnsData = {};
+
+                        ipChartArr.push({
+                            "ip": item,
+                            "totalCve": 0
+                        })
 
                         return (
-                            <Accordion defaultExpanded={true} key={index}>
+                            <Accordion key={index} elevation={6}>
                                 <AccordionSummary
                                     expandIcon={<ExpandMoreIcon/>}
                                     aria-controls={`panel${index}-content`}
@@ -499,7 +529,7 @@ async function scanner(scanResultsArray: any, setScanResultsArray: any, setLoadi
                                                             <Chip icon={<ManageHistoryIcon />} label="Version" variant="outlined" />
                                                             <Typography className={'serviceResultContentTypography'}>{portData.version || '-'}</Typography>
                                                         </Stack>
-                                                        <Accordion defaultExpanded={true} key={index} elevation={5}>
+                                                        <Accordion key={index} elevation={5}>
                                                             <AccordionSummary
                                                                 expandIcon={<ExpandMoreIcon/>}
                                                                 aria-controls={`panel${index}-content`}
@@ -524,7 +554,22 @@ async function scanner(scanResultsArray: any, setScanResultsArray: any, setLoadi
                                                                             if (item == cveItem.address) {
                                                                                 if (service.serviceName == portName) {
                                                                                     // Service is the same, display all CVE information collected
+
                                                                                     const cveTotalResults = service.cveTotalResults;
+
+                                                                                    if (cveTotalResults > 0) {
+                                                                                        serviceChartArr.push({
+                                                                                            "serviceName": service.serviceName,
+                                                                                            "totalResults": cveTotalResults
+                                                                                        })
+                                                                                    }
+
+                                                                                    // Locate the index for the ipChartArr with the matching IP Address
+                                                                                    const ipChartArrIndex = ipChartArr.findIndex(i => i.ip === item);
+                                                                                    if (ipChartArrIndex !== -1) {
+                                                                                        // Increment the IP addresses associated cve values
+                                                                                        ipChartArr[ipChartArrIndex].totalCve += parseInt(cveTotalResults);
+                                                                                    }
 
                                                                                     return (
                                                                                         <div
@@ -609,13 +654,101 @@ async function scanner(scanResultsArray: any, setScanResultsArray: any, setLoadi
                                             );
                                         })}
                                     </div>
+                                    {/*  Service Graphs  */}
+                                    {(() => {
+                                        if (serviceChartArr.length > 0) {
+                                            // Check if theres objects in the service chart array
+                                            // Create Service Graph data
+                                            const pieServiceVulnsData = {
+                                                labels: serviceChartArr.map((data) => data.serviceName),
+                                                // datasets is an array of objects where each object represents a set of data to display corresponding to the labels above.
+                                                datasets: [
+                                                    {
+                                                        label: 'Number of CVEs',
+                                                        data: serviceChartArr.map((data) => data.totalResults),
+                                                        // you can set indiviual colors for each bar
+                                                        backgroundColor: serviceChartArr.map(() => randomRGB()),
+                                                        borderColor: "black",
+                                                        borderWidth: 1,
+                                                    }
+                                                ]
+                                            }
+
+                                            const options = {
+                                                plugins: {
+                                                    title: {
+                                                        display: true,
+                                                        text: 'Discovered Services With CVEs',
+                                                        maintainAspectRatio: false, // Disable aspect ratio
+                                                        responsive: false, // Disable responsiveness
+                                                    }
+                                                }
+                                            }
+
+                                            return (
+                                                <div className={'chartServiceContainer'}>
+                                                    <Pie  data={pieServiceVulnsData} options={options} className={'pieChartServiceVulns'}/>
+                                                </div>
+                                            )
+                                        }
+                                    })()}
                                 </AccordionDetails>
                             </Accordion>
                         );
                     })}
                 </div>
-                // Create graphs
+                {/* IP graphs */}
+                {(() => {
+                    if (ipChartArr.length > 0) {
+                        // Create Service Graph data
+                        const pieServiceVulnsData = {
+                            labels: ipChartArr
+                                .filter(data => data.totalCve > 0)
+                                .map(data => data.ip),
+                            // datasets is an array of objects where each object represents a set of data to display corresponding to the labels above.
+                            datasets: [
+                                {
+                                    label: 'Number of CVEs',
+                                    data: ipChartArr
+                                        .filter(data => data.totalCve > 0)
+                                        .map(data => data.totalCve),
+                                    // you can set indiviual colors for each bar
+                                    backgroundColor: ipChartArr
+                                        .filter(data => data.totalCve > 0)
+                                        .map(() => randomRGB()),
+                                    borderColor: "black",
+                                    borderWidth: 1,
+                                }
+                            ]
+                        }
 
+                        const options = {
+                            plugins: {
+                                title: {
+                                    display: true,
+                                    text: 'Discovered IPs With CVEs'
+                                }
+                            }
+                        }
+
+                        return (
+                            <div className={'chartIpContainer'}>
+                                <Pie  data={pieServiceVulnsData} options={options} className={'pieChartServiceVulns'}/>
+                            </div>
+                        )
+                    }
+                })()}
+            </div>
+            <div className={'recommendations'}>
+                <Typography>
+                    Network Recommendations
+
+                    - These Devices have are *Vulnerable* (in red)
+                    - Suggestions if no vulnerable, else if vulnerable
+                        - Update the service to the most recent version and perform regular updates
+
+                    - View more information on each CVE at: (CVE ID url?)
+                </Typography>
             </div>
         </Paper>
     );
@@ -677,16 +810,6 @@ function displayResults() {
 
     return testComp;
 }
-
-// window.electron.ipcRenderer.on('startScan', async (arg) => {
-//     // eslint-disable-next-line no-console
-//     if (arg == '200') {
-//         console.log('200 received')
-//         console.log(arg)
-//     } else {
-//         console.log('Error received')
-//     }
-// });
 
 export default function App() {
   return (

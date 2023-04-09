@@ -41,13 +41,20 @@
   flex: 1;
   height: 100%;
   margin-bottom: 30px;
-  margin-right: 30px;
+  margin-right: 10px;
 }
 
 .papers {
   /*padding: 7%;*/
   margin: 7%;
+  min-width: 1000px;
   /*background: whitesmoke;*/
+}
+
+.chartServiceContainer {
+  max-width: 300px;
+  margin: auto;
+  /*max-height: 800px;*/
 }
 
 .serviceResultsPaper {

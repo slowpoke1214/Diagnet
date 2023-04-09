@@ -17,11 +17,9 @@ nmap.nmapLocation = 'nmap';
 //     return new Promise((resolve, reject) => {
 //         let nmapscan = new nmap.OsAndPortScan('192.168.1.69');
 //         nmapscan.on('complete', function(data: any){
-//             console.log(JSON.stringify(data));
 //             resolve('nice');
 //         });
 //         nmapscan.on('error', function(error: any){
-//             console.log(error);
 //             reject(error);
 //         });
 //
@@ -35,7 +33,6 @@ export async function scanDevices() : Promise<unknown> {
         Addresses: ['192.168.1.1', '192.168.1.2']
     })
     const IP = await getLocalIP();
-    // console.log('Current IP: ' + IP);
     const ipAddress = IP.split(':')[0];
     const netmask = IP.split(':')[1];
 
@@ -48,14 +45,11 @@ export async function scanDevices() : Promise<unknown> {
     let nmapscan = new nmap.QuickScan(range);
     const nmapPromise = new Promise((resolve, reject) => {
         nmapscan.on('complete', function (data: any) {
-            // console.log('START OF DEVICE DISCOVERY');
-            // console.log(JSON.stringify(data));
             for (let i = 0; i < data.length; i++) {
                 if (data[i].mac) {
                     ipAddresses.push(data[i].ip)
                 }
             }
-            // console.log(ipAddresses);
             resolve(ipAddresses);
         });
 
@@ -77,7 +71,6 @@ export async function scanPorts(event: any, devices: string) : Promise<unknown> 
     // TODO: Scan ports and return output
     let mainList: string[] = [];
     for (let i = 0; i < devices.length; i++) {
-        // console.log('Currently at device: ' + devices[i]);
         mainList.push(devices[i]);
     }
     // mainList = [
@@ -87,14 +80,6 @@ export async function scanPorts(event: any, devices: string) : Promise<unknown> 
     //     '192.168.1.133', '192.168.1.161',
     //     '192.168.1.175', '192.168.1.13',
     // ];
-
-    // console.log('DEVICES In PORT SCAN: ');
-    // console.log(devices);
-    // console.log(typeof devices);
-    // console.log(testList)
-    // console.log(typeof testList);
-    // console.log(mainList)
-    // console.log(typeof mainList);
 
 
     // let nmapscan = new nmap.OsAndPortScan('192.168.1.13');
@@ -118,11 +103,7 @@ export async function scanPorts(event: any, devices: string) : Promise<unknown> 
             if (err) throw err;
 
             // for (let item in report) {
-            //     console.log(JSON.stringify(report[item]));
             // }
-
-            // console.log('THE SINGLE IP:')
-            // console.log(JSON.stringify(report));
 
             let results = []
 
@@ -148,11 +129,6 @@ export async function scanPorts(event: any, devices: string) : Promise<unknown> 
 
                         if (mainList.includes(addr)) {
                             // Address matches
-                            // console.log('Found IP: ' + addr);
-                            // console.log('Ports are:')
-                            // console.log(JSON.stringify(portsArr));
-                            // console.log('OS are:')
-                            // console.log(JSON.stringify(osArr));
 
                             let serviceResults = []
 
@@ -219,7 +195,6 @@ export async function scanPorts(event: any, devices: string) : Promise<unknown> 
                             } catch (e) {
                                 // Ignore any values that aren't found
                             }
-                            // console.log('reaches! !')
                             results.push({[addr]: {'ports': serviceResults, 'os': [osName]}})
                         }
                     }
@@ -229,33 +204,13 @@ export async function scanPorts(event: any, devices: string) : Promise<unknown> 
             resolve(JSON.stringify(results));
         });
     });
-        // nmapscan.on('complete', function (data: any) {
-        //     console.log(JSON.stringify(data));
-        //     // for (let i = 0; i < data.length; i++) {
-        //     //     ipAddresses.push(data[i].ip)
-        //     // }
-        //     // console.log(ipAddresses);
-        //
-        //     resolve(JSON.stringify(data));
-        // });
-        //
-        // nmapscan.on('error', function (error: any) {
-        //     console.log('Error in the Port Scanning function: ' + error);
-        //     reject(error);
-        // });
-    // });
     //
     // nmapscan.startScan(); // Start the nmap scan
     let nmapScanResult = await nmapPromise; // Wait for the promise to resolve
     // const nmapScanResult = JSON.stringify([{"192.168.1.1":{"os":[null],"ports":[[]]}},{"192.168.1.103":{"os":[null],"ports":[[]]}},{"192.168.1.104":{"os":["OpenWrt Chaos Calmer 15.05 (Linux 3.18) or Designated Driver (Linux 4.1 or 4.4)"],"ports":[[{"Dropbear sshd":{"CPE":null,"port":"22","version":null}}]]}},{"192.168.1.11":{"os":[null],"ports":[[]]}},{"192.168.1.111":{"os":[null],"ports":[[]]}},{"192.168.1.13":{"os":["Linux 4.15 - 5.6"],"ports":[[{"OpenSSH":{"CPE":"cpe:/a:openbsd:openssh:8.2p1","port":"22","version":"8.2p1 Ubuntu 4ubuntu0.5"}},{"nginx":{"CPE":"cpe:/a:igor_sysoev:nginx:1.18.0","port":"80","version":"1.18.0"}}]]}},{"192.168.1.139":{"os":[null],"ports":[[]]}},{"192.168.1.69":{"os":[null],"ports":[[{"Microsoft Windows RPC":{"CPE":null,"port":"135","version":null}},{"Microsoft Windows netbios-ssn":{"CPE":null,"port":"139","version":null}},{"null":{"CPE":null,"version":null,"port":"445"}}]]}}]);
-    // console.log('Scanning Ports');
-    // console.log('OS and Port scan time: ' + nmapscan.scanTime);
     // // TODO: Error handling
-    // console.log(nmapScanResult);
     return nmapScanResult;
 
-    // console.log('Scanning Ports');
-    // console.log(devices);
     // return devices;
     // return 'Ports scanning not yet implemented';
 }
@@ -269,7 +224,6 @@ export async function scanCVE(event: any, CVEDeviceInfo: string) : Promise<unkno
 
     const deviceInfo = JSON.parse(CVEDeviceInfo);
     // Loop over items
-    console.log('ENTIRE LIST: ', JSON.stringify(deviceInfo))
     for (const data of deviceInfo) {
         // Take JSON object from the array
         for (const addr of Object.keys(data)) {
@@ -279,9 +233,7 @@ export async function scanCVE(event: any, CVEDeviceInfo: string) : Promise<unkno
             for (const service of data[addr].ports) {
                 // Iterate through each service in the address
 
-                console.log('IP ADDRESS: ', addr)
                 const serviceName = Object.keys(service)[0] || null
-                console.log('HERE SERVICE: ', serviceName);
                 // Check if service exists
                 if (serviceName) {
                     let cpeResult;
@@ -291,8 +243,6 @@ export async function scanCVE(event: any, CVEDeviceInfo: string) : Promise<unkno
                         // CPE Exists, use API
                         const res = await fetch(`${NISTUrl}${cpeNameParam}${encodeURIComponent(cpe)}`);
                         cpeResult = await res.json();
-                        console.log('\n NICE::!!!!!!!!!!!!!!!!!!11 \n \n');
-                        // console.log(JSON.stringify(cpeResult));
 
                         // Timeout for 6 seconds due to rate limiting by NIST API
                         await new Promise(resolve => setTimeout(resolve, 6000));
@@ -318,11 +268,15 @@ export async function scanCVE(event: any, CVEDeviceInfo: string) : Promise<unkno
         }
 
     }
-    console.log('FINAL RESULTS:: \n');
-    console.log(JSON.stringify(results));
 
-    const testResults = [{
-        "address": "192.168.1.13",
+    const testResults = [
+        {"address": "192.168.1.1",
+        "data": [{
+            "serviceName":"Microsoft Windows RPC",
+            "CVEData":[]
+            }]
+        },
+        {"address": "192.168.1.13",
         "data": [{
             "serviceName": "OpenSSH",
             "CVEData": {
@@ -3344,39 +3298,43 @@ export async function scanCVE(event: any, CVEDeviceInfo: string) : Promise<unkno
     // -
 
     const mainResults = [];
+    console.log('---- CVE Results Array ----', JSON.stringify(results))
 
-    for (const items of testResults) {
+    // for (const items of testResults) {
+    for (const items of results) {
         // Iterate through each IP address
-        console.log('NICE: ', items.address);
         const addr = items.address ?? null;
         const cveServicesArr = [];
+        console.log('---- At Current IP ----:', addr);
 
         for (const serviceData of items.data) {
             // Iterate through each services CVE information
-            console.log('ServiceNAME: ', serviceData.serviceName);
             const cveDataArr = [];
 
             const serviceName = serviceData.serviceName ?? null;
             const numResults = serviceData.CVEData.totalResults ?? null;
+            console.log('---- At Current Service Data ----', JSON.stringify(serviceData));
 
-            for (const cveItems of serviceData.CVEData.result.CVE_Items) {
-                // Iterate through each CVE
+            if (serviceData.CVEData?.result?.CVE_Items !== undefined) {
+                for (const cveItems of serviceData.CVEData.result.CVE_Items) {
+                    // Iterate through each CVE
 
-                const cveID = cveItems.cve.CVE_data_meta.ID ?? null;
-                let cveScore = null;
-                // const cveScore = cveItems.impact.baseMetricV3.cvssV3.baseScore ?? null;
-                if (cveItems.impact.baseMetricV3) {
-                    cveScore = cveItems.impact.baseMetricV3.cvssV3.baseScore;
-                }  else if (cveItems.impact.baseMetricV2) {
-                    cveScore = cveItems.impact.baseMetricV2.cvssV2.baseScore;
+                    const cveID = cveItems.cve.CVE_data_meta.ID ?? null;
+                    let cveScore = null;
+                    // const cveScore = cveItems.impact.baseMetricV3.cvssV3.baseScore ?? null;
+                    if (cveItems.impact.baseMetricV3) {
+                        cveScore = cveItems.impact.baseMetricV3.cvssV3.baseScore;
+                    } else if (cveItems.impact.baseMetricV2) {
+                        cveScore = cveItems.impact.baseMetricV2.cvssV2.baseScore;
+                    }
+                    const cveDesc = cveItems.cve.description.description_data[0].value ?? null;
+
+                    cveDataArr.push({
+                        "cveID": cveID,
+                        "cveBaseScore": cveScore,
+                        "cveDesc": cveDesc
+                    })
                 }
-                const cveDesc = cveItems.cve.description.description_data[0].value ?? null;
-
-                cveDataArr.push({
-                    "cveID": cveID,
-                    "cveBaseScore": cveScore,
-                    "cveDesc": cveDesc
-                })
             }
             // Add the service and its CVE info to the array
             cveServicesArr.push({
@@ -3392,21 +3350,23 @@ export async function scanCVE(event: any, CVEDeviceInfo: string) : Promise<unkno
         })
     }
 
-    console.log('MAIN OUTPUT: ', JSON.stringify(mainResults));
+    console.log('---- Parsed CVE Results --- ', JSON.stringify(mainResults))
 
-    const CVEResult = {
-        "address": "192.168.1.13",
-        "cveResults": [{
-            "serviceName": "OpenSSH",
-            "cveTotalResults": "9",
-            "cveData": [{
-                "cveID": "10283091203",
-                "cveBaseScore": "8",
-                "cveDesc": "This is da CVE"
-            }]
+    // Example data structure
+    // const CVEResult = {
+    //     "address": "192.168.1.13",
+    //     "cveResults": [{
+    //         "serviceName": "OpenSSH",
+    //         "cveTotalResults": "9",
+    //         "cveData": [{
+    //             "cveID": "10283091203",
+    //             "cveBaseScore": "8",
+    //             "cveDesc": "This is da CVE"
+    //         }]
+    //
+    //     }]
+    // };
 
-        }]
-    };
     const CVEResultArr = [];
     return JSON.stringify(mainResults);
 }
@@ -3414,7 +3374,6 @@ export async function scanCVE(event: any, CVEDeviceInfo: string) : Promise<unkno
 async function getLocalIP() {
     const interfaces = networkInterfaces();
     let discoveredIP = null;
-    // console.log(interfaces);
 
     // Iterate through all network interfaces
     for (const name of Object.keys(interfaces)) {
