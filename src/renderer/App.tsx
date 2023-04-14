@@ -5,6 +5,8 @@ import './App.css';
 import Button from '@mui/material/Button';
 import List from '@mui/material/List';
 import ListItem from '@mui/material/ListItem';
+import ListItemText from '@mui/material/ListItemText';
+import ListSubheader from '@mui/material/ListSubheader';
 import Paper from '@mui/material/Paper';
 import Accordion from '@mui/material/Accordion';
 import AccordionSummary from '@mui/material/AccordionSummary';
@@ -264,6 +266,7 @@ async function scanner(scanResultsArray: any, setScanResultsArray: any, setLoadi
     let servicesResult: any[] = [];  // Define services result array
     try {
         servicesResult = JSON.parse(await window.electron.ipcRenderer.scanPorts(devices));
+        // servicesResult = []
         // servicesResult = [{
         //     "192.168.1.13": {
         //         "os": ["Linux 4.15 - 5.6"],
@@ -279,6 +282,12 @@ async function scanner(scanResultsArray: any, setScanResultsArray: any, setLoadi
         //                 "port": "80",
         //                 "version": "1.18.0"
         //             }
+        //         }, {
+        //             "snort": {
+        //                 "CPE": "cpe:/a:openbsd:openssh:4.1:p1",
+        //                 "port": "193",
+        //                 "version": "4.1"
+        //             }
         //         }
         //         ]
         //     }, "192.168.1.69": {
@@ -292,20 +301,36 @@ async function scanner(scanResultsArray: any, setScanResultsArray: any, setLoadi
         //         }, {
         //             "nginx": {
         //                 "CPE": "cpe:/a:igor_sysoev:nginx:1.18.0",
-        //                 "port": "96",
+        //                 "port": "80",
         //                 "version": "1.18.0"
+        //             }
+        //         }, {
+        //             "apache": {
+        //                 "CPE": "cpe:2.3:a:f5:nginx:*:*:*:*:*:*:*:*",
+        //                 "port": "96",
+        //                 "version": "1.3"
+        //             }
+        //         }, {
+        //             "windows": {
+        //                 "CPE": "cpe:/o:microsoft:windows",
+        //                 "port": "12",
+        //                 "version": "7"
         //             }
         //         }
         //         ]
         //     }, "192.168.1.104": {
-        //         "ports": [
-        //             {
+        //         "ports": [{
         //                 "Dropbear sshd": {
         //                     "CPE": null,
         //                     "version": null,
         //                     "port": "22"
         //                 }
-        //             }
+        //             }, {
+        //             "Apache": {
+        //                 "CPE": "cpe:/a:openbsd:openssh:7.3:p1",
+        //                 "version": "7.3",
+        //                 "port": "88"
+        //             }}
         //         ],
         //         "os": [
         //             "OpenWrt Chaos Calmer 15.05 (Linux 3.18) or Designated Driver (Linux 4.1 or 4.4)"
@@ -567,8 +592,12 @@ async function scanner(scanResultsArray: any, setScanResultsArray: any, setLoadi
                                                                                     // Locate the index for the ipChartArr with the matching IP Address
                                                                                     const ipChartArrIndex = ipChartArr.findIndex(i => i.ip === item);
                                                                                     if (ipChartArrIndex !== -1) {
-                                                                                        // Increment the IP addresses associated cve values
-                                                                                        ipChartArr[ipChartArrIndex].totalCve += parseInt(cveTotalResults);
+                                                                                        // Check the index exists
+                                                                                        if (service.cveTotalResults > 0) {
+                                                                                            // Check the service has a value for total CVE
+                                                                                            // Increment the IP addresses associated cve values
+                                                                                            ipChartArr[ipChartArrIndex].totalCve += parseInt(cveTotalResults);
+                                                                                        }
                                                                                     }
 
                                                                                     return (
@@ -697,53 +726,53 @@ async function scanner(scanResultsArray: any, setScanResultsArray: any, setLoadi
                         );
                     })}
                 </div>
-                {/* IP graphs */}
-                {(() => {
-                    if (ipChartArr.length > 0) {
-                        if (ipChartArr.some((data) => data.totalCve > 0)) {
+                {/*/!* IP graphs *!/*/}
+                {/*{(() => {*/}
+                {/*    if (ipChartArr.length > 0) {*/}
+                {/*        if (ipChartArr.some((data) => data.totalCve > 0)) {*/}
 
-                            const options = {
-                                plugins: {
-                                    title: {
-                                        display: true,
-                                        text: 'Discovered IPs With CVEs'
-                                    }
-                                }
-                            }
+                {/*            const options = {*/}
+                {/*                plugins: {*/}
+                {/*                    title: {*/}
+                {/*                        display: true,*/}
+                {/*                        text: 'Discovered IPs With CVEs'*/}
+                {/*                    }*/}
+                {/*                }*/}
+                {/*            }*/}
 
-                            // Create Service Graph data
-                            const pieServiceVulnsData = {
-                                labels: ipChartArr
-                                    .filter(data => data.totalCve > 0)
-                                    .map(data => data.ip),
-                                // datasets is an array of objects where each object represents a set of data to display corresponding to the labels above.
-                                datasets: [
-                                    {
-                                        label: 'Number of CVEs',
-                                        data: ipChartArr
-                                            .filter(data => data.totalCve > 0)
-                                            .map(data => data.totalCve),
-                                        // you can set indiviual colors for each bar
-                                        backgroundColor: ipChartArr
-                                            .filter(data => data.totalCve > 0)
-                                            .map(() => randomRGB()),
-                                        borderColor: "black",
-                                        borderWidth: 1,
-                                    }
-                                ]
-                            }
+                {/*            // Create Service Graph data*/}
+                {/*            const pieServiceVulnsData = {*/}
+                {/*                labels: ipChartArr*/}
+                {/*                    .filter(data => data.totalCve > 0)*/}
+                {/*                    .map(data => data.ip),*/}
+                {/*                // datasets is an array of objects where each object represents a set of data to display corresponding to the labels above.*/}
+                {/*                datasets: [*/}
+                {/*                    {*/}
+                {/*                        label: 'Number of CVEs',*/}
+                {/*                        data: ipChartArr*/}
+                {/*                            .filter(data => data.totalCve > 0)*/}
+                {/*                            .map(data => data.totalCve),*/}
+                {/*                        // you can set indiviual colors for each bar*/}
+                {/*                        backgroundColor: ipChartArr*/}
+                {/*                            .filter(data => data.totalCve > 0)*/}
+                {/*                            .map(() => randomRGB()),*/}
+                {/*                        borderColor: "black",*/}
+                {/*                        borderWidth: 1,*/}
+                {/*                    }*/}
+                {/*                ]*/}
+                {/*            }*/}
 
-                            return (
-                                <div className={'chartIpContainer'}>
-                                    <Pie  data={pieServiceVulnsData} options={options} className={'pieChartServiceVulns'}/>
-                                </div>
-                            )
-                        }
-                    }
-                })()}
+                {/*            return (*/}
+                {/*                <div className={'chartIpContainer'}>*/}
+                {/*                    <Pie  data={pieServiceVulnsData} options={options} className={'pieChartServiceVulns'}/>*/}
+                {/*                </div>*/}
+                {/*            )*/}
+                {/*        }*/}
+                {/*    }*/}
+                {/*})()}*/}
             </div>
             <div className={'recommendations'}>
-                <Accordion>
+                <Accordion elevation={5} defaultExpanded={true}>
                     <AccordionSummary
                         expandIcon={<ExpandMoreIcon/>}
                     >
@@ -791,33 +820,188 @@ async function scanner(scanResultsArray: any, setScanResultsArray: any, setLoadi
                                 {
                                     finalResult.length > 0 ? (
                                         // Atleast one IP has a CVE
-                                        <div>
-                                            <Typography>
-                                            These CVEs were detected:
-                                            </Typography>
+                                        <div className={'finalResult'}>
+                                            <div className={'finalResultContent'}>
+                                                <div className={'finalResultTextInformation'}>
+                                                    <Typography>
+                                                        The following CVEs were discovered on the devices below.
+                                                        It is recommended to update every service affected in order to reduce the
+                                                        likelihood of a machine becoming compromised.
 
-                                            {finalResult.map((item, index) => (
-                                                <List>
-                                                    <ListItem>IP Address: {item.ip}</ListItem>
-                                                    {item.cveData.map((servicesArrItem: any, index: any) => (
-                                                        <div>
-                                                            <ListItem>Service Name: {servicesArrItem.serviceName}</ListItem>
-                                                            {servicesArrItem.cveData.map((cveDataItem: any, index: any) => (
-                                                                <div>
-                                                                    <ListItem>CVE ID: {cveDataItem.cveID}, CVE Score: {cveDataItem.cveBaseScore}</ListItem>
+                                                        <br/><br/>
+
+                                                        General tips to update your services:
+                                                        <br/><br/>
+                                                        <b>Windows:</b> <br/>
+                                                        <b>1.</b> Navigate to the services web page<br/>
+                                                        <b>2.</b> Download the latest version<br/>
+                                                        <b>3.</b> Uninstall outdated version<br/>
+                                                        <b>4.</b> Install new version<br/>
+                                                        <br/><br/>
+                                                        <b>Unix:</b><br/>
+                                                        Red Hat Distributions (RHEL, Fedora, CentOS, etc):<br/>
+                                                        <b>1.</b> sudo yum update && sudo yum upgrade<br/>
+                                                        This command updates the package index files, then upgrades the installed packages.<br/>
+                                                        <br/><br/>
+                                                        Debian Based Distributions (Ubuntu, Debian, etc):<br/>
+                                                        <b>1.</b> sudo apt update && sudo yum upgrade<br/>
+                                                        This command updates the package index files, then upgrades the installed packages.<br/>
+                                                    </Typography>
+                                                </div>
+
+                                                {finalResult.map((item, index) => (
+                                                    <Paper  elevation={6} className={'finalResultPapers'}>
+                                                        <Typography variant={"h5"}>
+                                                            IP Address: {item.ip}
+                                                        </Typography>
+                                                        <List key={index}
+                                                             sx={{
+                                                                 width: '100%',
+                                                                 // maxWidth: 500,
+                                                                 bgcolor: 'background.paper',
+                                                                 position: 'relative',
+                                                                 overflow: 'auto',
+                                                                 maxHeight: 300,
+                                                                 '& ul': {padding: 0},
+                                                        }}>
+                                                            {item.cveData.map((servicesArrItem: any, index: any) => (
+                                                                <div key={index}>
+                                                                    <ListSubheader key={index}>
+                                                                        <Typography variant={"h6"}>
+                                                                            Service: {servicesArrItem.serviceName}
+                                                                        </Typography>
+                                                                    </ListSubheader>
+                                                                    {servicesArrItem.cveData
+                                                                        .sort((a: any, b: any) => b.cveBaseScore - a.cveBaseScore)  // Sort in descending order
+                                                                        .map((cveDataItem: any, index: any) => (
+                                                                            <ListItem key={index} className={'finalResultListItem'}>
+                                                                                <Stack direction="column" spacing={2}>
+                                                                                    <Typography>
+                                                                                        <b>CVE ID: </b> {cveDataItem.cveID}
+                                                                                    </Typography>
+                                                                                    <Stack direction="row" spacing={3}>
+                                                                                        <Chip
+                                                                                            icon={<NumbersIcon/>}
+                                                                                            label="Base Score"
+                                                                                            variant="outlined"
+                                                                                            style={{
+                                                                                                backgroundColor:
+                                                                                                    parseFloat(cveDataItem.cveBaseScore) >= 0.0 && parseFloat(cveDataItem.cveBaseScore) < 4
+                                                                                                        ? 'green'
+                                                                                                        : parseFloat(cveDataItem.cveBaseScore) >= 4 && parseFloat(cveDataItem.cveBaseScore) < 7
+                                                                                                        ? 'yellow'
+                                                                                                        : parseFloat(cveDataItem.cveBaseScore) >= 7 && parseFloat(cveDataItem.cveBaseScore) < 9
+                                                                                                            ? 'red'
+                                                                                                            : parseFloat(cveDataItem.cveBaseScore) >= 9 && parseFloat(cveDataItem.cveBaseScore) <= 10
+                                                                                                                ? 'black'
+                                                                                                                : '',
+                                                                                                color:
+                                                                                                    parseFloat(cveDataItem.cveBaseScore) >= 0.0 && parseFloat(cveDataItem.cveBaseScore) < 4
+                                                                                                        ? 'white'
+                                                                                                        : parseFloat(cveDataItem.cveBaseScore) >= 4 && parseFloat(cveDataItem.cveBaseScore) < 7
+                                                                                                        ? 'black'
+                                                                                                        : parseFloat(cveDataItem.cveBaseScore) >= 7 && parseFloat(cveDataItem.cveBaseScore) < 9
+                                                                                                            ? 'white'
+                                                                                                            : parseFloat(cveDataItem.cveBaseScore) >= 9 && parseFloat(cveDataItem.cveBaseScore) <= 10
+                                                                                                                ? 'white'
+                                                                                                                : 'black'
+                                                                                            }}
+                                                                                        />
+                                                                                        <Typography
+                                                                                            className={'serviceResultContentTypography'}>
+                                                                                            {cveDataItem.cveBaseScore}
+                                                                                        </Typography>
+                                                                                    </Stack>
+                                                                                </Stack>
+                                                                            </ListItem>
+                                                                        ))}
                                                                 </div>
                                                             ))}
-                                                        </div>
-                                                    ))}
-                                                </List>
-                                            ))}
+                                                        </List>
+                                                    </Paper>
+                                                ))}
+                                            </div>
+
+                                            {/* IP graphs */}
+                                            <div className={'finalResultGraphs'}>
+                                                {(() => {
+                                                    if (ipChartArr.length > 0) {
+                                                        if (ipChartArr.some((data) => data.totalCve > 0)) {
+
+                                                            console.log('Chart Array: ', JSON.stringify(ipChartArr));
+
+
+                                                            const options = {
+                                                                plugins: {
+                                                                    title: {
+                                                                        display: true,
+                                                                        text: 'Discovered IPs With CVEs'
+                                                                    }
+                                                                }
+                                                            }
+
+                                                            // Create Service Graph data
+                                                            const pieIpVulnsData = {
+                                                                labels: ipChartArr
+                                                                    .filter(data => data.totalCve > 0)
+                                                                    .map(data => data.ip),
+                                                                // datasets is an array of objects where each object represents a set of data to display corresponding to the labels above.
+                                                                datasets: [
+                                                                    {
+                                                                        label: 'Number of CVEs',
+                                                                        data: ipChartArr
+                                                                            .filter(data => data.totalCve > 0)
+                                                                            .map(data => data.totalCve),
+                                                                        // you can set indiviual colors for each bar
+                                                                        backgroundColor: ipChartArr
+                                                                            .filter(data => data.totalCve > 0)
+                                                                            .map(() => randomRGB()),
+                                                                        borderColor: "black",
+                                                                        borderWidth: 1,
+                                                                    }
+                                                                ]
+                                                            }
+
+                                                            return (
+                                                                <div className={'chartIpContainer'}>
+                                                                    <Pie data={pieIpVulnsData} options={options}
+                                                                         className={'pieChartServiceVulns'}/>
+                                                                </div>
+                                                            )
+                                                        }
+                                                    }
+                                                })()}
+                                            </div>
                                         </div>
 
                                     ) : (
                                         // No IP's have CVEs
-                                        <Typography>
-                                            The services on your network have <b>NO</b> vulnerabilities! Ensure you keep your services up to date.
-                                        </Typography>
+                                        <div className={'finalResultTextInformation'}>
+                                            <Typography>
+                                                The services on your network have <b>NO</b> vulnerabilities! Ensure you keep
+                                                your services up to date.
+
+                                                <br/><br/>
+
+                                                General tips to update your services:
+                                                <br/><br/>
+
+                                                <b>Windows:</b> <br/>
+                                                <b>1.</b> Navigate to the services web page<br/>
+                                                <b>2.</b> Download the latest version<br/>
+                                                <b>3.</b> Uninstall outdated version<br/>
+                                                <b>4.</b> Install new version<br/>
+                                                <br/><br/>
+                                                <b>Unix:</b><br/>
+                                                Red Hat Distributions (RHEL, Fedora, CentOS, etc):<br/>
+                                                <b>1.</b> sudo yum update && sudo yum upgrade<br/>
+                                                This command updates the package index files, then upgrades the installed packages.<br/>
+                                                <br/><br/>
+                                                Debian Based Distributions (Ubuntu, Debian, etc):<br/>
+                                                <b>1.</b> sudo apt update && sudo yum upgrade<br/>
+                                                This command updates the package index files, then upgrades the installed packages.<br/>
+                                            </Typography>
+                                        </div>
                                     )
                                 }
                             </div>
