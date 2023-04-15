@@ -9,33 +9,20 @@ const nmap = require('node-nmap');
 const libnmapp = require('libnmap');
 nmap.nmapLocation = 'nmap';
 
-// TODO: Create a options menu, with [ Nmap location, Network Subnet ]
-
-// const connectAsync = promisify(net.connect);
-
-// function networkDiscovery(): Promise<string> {
-//     return new Promise((resolve, reject) => {
-//         let nmapscan = new nmap.OsAndPortScan('192.168.1.69');
-//         nmapscan.on('complete', function(data: any){
-//             resolve('nice');
-//         });
-//         nmapscan.on('error', function(error: any){
-//             reject(error);
-//         });
-//
-//         nmapscan.startScan();
-//     });
-// }
-
 export async function scanDevices() : Promise<unknown> {
-    // TODO: Scan devices and return output
-    const testObj = JSON.stringify({
-        Addresses: ['192.168.1.1', '192.168.1.2']
-    })
+    // Call function to retrieve primary IP address from local interfaces
     const IP = await getLocalIP();
+
+    if (IP == 'ipNotFound') {
+        // Check if the IP could not be identified
+        return IP;
+    }
+
+    // Split the IP into netmask and IP address
     const ipAddress = IP.split(':')[0];
     const netmask = IP.split(':')[1];
 
+    // Split the IP and netmask parts further for creating the range
     const addressParts = ipAddress.split('.');
     const netmaskParts = netmask.split('.');
     const netAddress = addressParts.map((part, i) => parseInt(part) & parseInt(netmaskParts[i])).join('.');
@@ -46,10 +33,13 @@ export async function scanDevices() : Promise<unknown> {
     const nmapPromise = new Promise((resolve, reject) => {
         nmapscan.on('complete', function (data: any) {
             for (let i = 0; i < data.length; i++) {
+                // Iterate through results of scan
                 if (data[i].mac) {
+                    // Verify that the addresses are correct and have a mac address
                     ipAddresses.push(data[i].ip)
                 }
             }
+            // Resolve the promise with the array of discovered IP addresses
             resolve(ipAddresses);
         });
 
@@ -63,7 +53,6 @@ export async function scanDevices() : Promise<unknown> {
     let nmapScanResult = await nmapPromise; // Wait for the promise to resolve
 
     console.log('Scanning devices time: ', nmapscan.scanTime);
-    // TODO: Error handling
     return nmapScanResult;
 }
 
@@ -73,26 +62,12 @@ export async function scanPorts(event: any, devices: string) : Promise<unknown> 
     for (let i = 0; i < devices.length; i++) {
         mainList.push(devices[i]);
     }
-    // mainList = [
-    //     '192.168.1.1',   '192.168.1.11',
-    //     '192.168.1.69',  '192.168.1.103',
-    //     '192.168.1.104', '192.168.1.111',
-    //     '192.168.1.133', '192.168.1.161',
-    //     '192.168.1.175', '192.168.1.13',
-    // ];
-
-
-    // let nmapscan = new nmap.OsAndPortScan('192.168.1.13');
-    // let nmapscan = new nmap.NmapScan(devices, ['-O', '-sV', '-v']);
-    // let nmapscan = new nmap.NmapScan('192.168.1.13', '-sV');
-
 
     const opts = {
         flags: [
-            '-sV', // Open port to determine service (i.e. FTP, SSH etc)
-            '-O', // OS finger printing (requires elevated privileges)
-            '-sC',
-
+            '-sV', // Scans open ports to determine service
+            '-O', // OS finger printing
+            // '-sC',
         ],
         range: mainList,
         json: true
@@ -101,18 +76,7 @@ export async function scanPorts(event: any, devices: string) : Promise<unknown> 
     const nmapPromise = new Promise((resolve, reject) => {
         libnmapp.scan(opts, function(err: any, report: any) {
             if (err) throw err;
-
-            // for (let item in report) {
-            // }
-
             let results = []
-
-// Create new object of relevant information
-// let hostResult = {addr: {
-//         'services': serviceResults,
-//         'os': [{'OSName': []}],
-//     }}
-
 
             for (const item in report) {
                 const host = report[item];
@@ -153,13 +117,14 @@ export async function scanPorts(event: any, devices: string) : Promise<unknown> 
                                     // Service Name
                                     // CPE
 
-                                    // Reset the service reults for this iteration
+                                    // Reset the service results for this iteration
                                     serviceResults = []
 
                                     const mainPortsArr = portsArrItem.port;
                                     for (const mainPortsArrItem of mainPortsArr) {
                                         const serviceArr = mainPortsArrItem.service;
 
+                                        // Initialize the values
                                         let serviceCPE = null;
                                         let serviceVersion = null;
                                         let serviceName = null;
@@ -181,16 +146,6 @@ export async function scanPorts(event: any, devices: string) : Promise<unknown> 
                                             serviceResults.push({[serviceName]: {'CPE': serviceCPE, 'version': serviceVersion, 'port': servicePort}})
                                         }
                                     }
-
-                                    // results.push({[addr]: {'ports': [serviceResults], 'os': [osName]}})
-                                    let nicee = JSON.stringify(results[0]);
-                                    // const serviceArr = portsArrItem.service;
-
-                                    // for (const serviceArrItem of serviceArr) {
-                                    //     const serviceName = serviceArrItem.item.name;
-                                    //     const serviceCPE = serviceArrItem.cpe[0];
-                                    //     const serviceVersion = serviceArrItem.item.version;
-                                    // }
                                 }
                             } catch (e) {
                                 // Ignore any values that aren't found
@@ -204,15 +159,8 @@ export async function scanPorts(event: any, devices: string) : Promise<unknown> 
             resolve(JSON.stringify(results));
         });
     });
-    //
-    // nmapscan.startScan(); // Start the nmap scan
     let nmapScanResult = await nmapPromise; // Wait for the promise to resolve
-    // const nmapScanResult = JSON.stringify([{"192.168.1.1":{"os":[null],"ports":[[]]}},{"192.168.1.103":{"os":[null],"ports":[[]]}},{"192.168.1.104":{"os":["OpenWrt Chaos Calmer 15.05 (Linux 3.18) or Designated Driver (Linux 4.1 or 4.4)"],"ports":[[{"Dropbear sshd":{"CPE":null,"port":"22","version":null}}]]}},{"192.168.1.11":{"os":[null],"ports":[[]]}},{"192.168.1.111":{"os":[null],"ports":[[]]}},{"192.168.1.13":{"os":["Linux 4.15 - 5.6"],"ports":[[{"OpenSSH":{"CPE":"cpe:/a:openbsd:openssh:8.2p1","port":"22","version":"8.2p1 Ubuntu 4ubuntu0.5"}},{"nginx":{"CPE":"cpe:/a:igor_sysoev:nginx:1.18.0","port":"80","version":"1.18.0"}}]]}},{"192.168.1.139":{"os":[null],"ports":[[]]}},{"192.168.1.69":{"os":[null],"ports":[[{"Microsoft Windows RPC":{"CPE":null,"port":"135","version":null}},{"Microsoft Windows netbios-ssn":{"CPE":null,"port":"139","version":null}},{"null":{"CPE":null,"version":null,"port":"445"}}]]}}]);
-    // // TODO: Error handling
     return nmapScanResult;
-
-    // return devices;
-    // return 'Ports scanning not yet implemented';
 }
 
 export async function scanCVE(event: any, CVEDeviceInfo: string) : Promise<unknown> {
@@ -258,7 +206,6 @@ export async function scanCVE(event: any, CVEDeviceInfo: string) : Promise<unkno
                         "CVEData": cpeResult
                     })
                 }
-
             }
             // End of address, add to list
             results.push({
@@ -268,16 +215,6 @@ export async function scanCVE(event: any, CVEDeviceInfo: string) : Promise<unkno
         }
 
     }
-
-
-
-    // TODO: Parse results and return new object with only:
-    // - address
-    // - CVEData.totalResults
-    // - CVEData.result.CVE_Items.cve.CVE_data_meta.ID
-    // - CVEData.result.CVE_Items.impact.baseMetricV3.cvssV3.baseScore
-    // - CVEData.result.CVE_Items.cve.description.description_data (if lang == 'en') then get .value
-    // -
 
     const mainResults = [];
     // console.log('---- CVE Results Array ----', JSON.stringify(results))
@@ -332,25 +269,6 @@ export async function scanCVE(event: any, CVEDeviceInfo: string) : Promise<unkno
             "cveResults": cveServicesArr
         })
     }
-
-    // console.log('---- Parsed CVE Results --- ', JSON.stringify(mainResults))
-
-    // Example data structure
-    // const CVEResult = {
-    //     "address": "192.168.1.13",
-    //     "cveResults": [{
-    //         "serviceName": "OpenSSH",
-    //         "cveTotalResults": "9",
-    //         "cveData": [{
-    //             "cveID": "10283091203",
-    //             "cveBaseScore": "8",
-    //             "cveDesc": "This is da CVE"
-    //         }]
-    //
-    //     }]
-    // };
-
-    const CVEResultArr = [];
     return JSON.stringify(mainResults);
 }
 
@@ -366,7 +284,6 @@ async function getLocalIP() {
         if (name.toLocaleLowerCase().startsWith('virtual') || name.toLocaleLowerCase().startsWith('vm') || name.toLocaleLowerCase().startsWith('vbox')) {
             continue;
         }
-
         // Iterate through list of IP addresses associated with the interface
         for (const address of iface) {
             if (address.family === 'IPv4' && !address.internal && address.mac !== '00:00:00:00:00:00' && address.netmask === '255.255.255.0') {
@@ -374,16 +291,14 @@ async function getLocalIP() {
                 break;
             }
         }
-
         if (discoveredIP) {
             break;
         }
     }
-
     if (!discoveredIP) {
         // An Interface could not be found
         // TODO: Handle error
+        return 'ipNotFound'
     }
-
     return discoveredIP;
 }

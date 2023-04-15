@@ -1,18 +1,14 @@
-import { MemoryRouter as Router, Routes, Route } from 'react-router-dom';
-import icon from '../../assets/icon.svg';
+import {MemoryRouter as Router, Route, Routes} from 'react-router-dom';
 import './App.css';
 
-import Button from '@mui/material/Button';
 import List from '@mui/material/List';
 import ListItem from '@mui/material/ListItem';
-import ListItemText from '@mui/material/ListItemText';
 import ListSubheader from '@mui/material/ListSubheader';
 import Paper from '@mui/material/Paper';
 import Accordion from '@mui/material/Accordion';
 import AccordionSummary from '@mui/material/AccordionSummary';
 import AccordionDetails from '@mui/material/AccordionDetails';
 import Typography from '@mui/material/Typography';
-import IconButton from '@mui/material/IconButton';
 import Toolbar from '@mui/material/Toolbar';
 import AppBar from '@mui/material/AppBar';
 import Box from '@mui/material/Box';
@@ -23,8 +19,8 @@ import StepContent from '@mui/material/StepContent';
 import Chip from '@mui/material/Chip';
 import Stack from '@mui/material/Stack';
 import Chart from 'chart.js/auto'
-import { CategoryScale } from "chart.js";
-import { Pie } from "react-chartjs-2";
+import {CategoryScale} from "chart.js";
+import {Pie} from "react-chartjs-2";
 
 import LoadingButton from '@mui/lab/LoadingButton';
 
@@ -35,12 +31,7 @@ import NumbersIcon from '@mui/icons-material/Numbers';
 import ManageHistoryIcon from '@mui/icons-material/ManageHistory';
 import InfoIcon from '@mui/icons-material/Info';
 import DescriptionIcon from '@mui/icons-material/Description';
-import ScoreIcon from '@mui/icons-material/Score';
-import MenuIcon from '@mui/icons-material/Menu';
-
-import {json} from "stream/consumers";
 import {useState} from "react";
-// import Card from '@mui/material/Card';
 
 Chart.register(CategoryScale);
 
@@ -48,26 +39,13 @@ function Main() {
     const [scanResultsArray, setScanResultsArray] = useState([]);
     const [loadingBool, setLoading] = useState(false);
 
-
-    // Test variables
-    const currDate = new Date().toLocaleDateString();
-    const currTime = new Date().toLocaleTimeString();
-
-    const devices = [
-        '192.168.1.1',   '192.168.1.11',
-        '192.168.1.69',  '192.168.1.103',
-        '192.168.1.104', '192.168.1.111',
-        '192.168.1.133', '192.168.1.161',
-        '192.168.1.175', '192.168.1.13',
-    ];
-
     return (
         // ----------Navbar----------
       <div>
           <Box sx={{ flexGrow: 1 }}>
               <AppBar position="static">
                   <Toolbar variant="dense">
-                      <Typography variant="h5" color="inherit" component="div">
+                      <Typography variant="h5" color="inherit" component="div" className={"mainPageHeader"}>
                           Diagnet
                       </Typography>
                   </Toolbar>
@@ -123,19 +101,6 @@ function Main() {
 
 async function scanner(scanResultsArray: any, setScanResultsArray: any, setLoading: any) {
     // This function Should asynchronously handle receiving every step
-
-    // TODO: Change button to cancel, and listen for a cancellation
-
-    // TODO: Create a paper with a unique id, as well for the accordions
-    //  in it, then when the second phase of port scanning is done you
-    //  can target the unique ID and add to it
-
-    // For default expanded accordions, using hooks and states
-    // const [expandedItem, setExpandedItem] = useState(null);
-    //
-    // const handleAccordionChange = (index) => (event: any, isExpanded: any) => {
-    //     setExpandedItem(isExpanded ? index : null);
-    // };
 
     // Get current date and time
     const currDate = new Date().toLocaleDateString();
@@ -193,7 +158,6 @@ async function scanner(scanResultsArray: any, setScanResultsArray: any, setLoadi
         </Paper>
     );
 
-    // await setScanResultsArray((prevState: any) => [...prevState, startingResult]);
     await updateScanResult(scanResultsArray, setScanResultsArray, startingResult);
 
     /*
@@ -201,6 +165,23 @@ async function scanner(scanResultsArray: any, setScanResultsArray: any, setLoadi
     */
     // Run device scan
     const devices = await window.electron.ipcRenderer.scanDevices();
+
+    // Check if IP could be identified
+    if (devices == 'ipNotFound') {
+        setLoading(false);  // Reset the buttons status
+
+        // Clear the DOM
+        await updateScanResult(
+            scanResultsArray,
+            setScanResultsArray,
+            '');
+
+        // Alert the user of the error
+        alert('The local IP address could not be identified, ' +
+            'ensure you are connected to the internet.');
+        return
+    }
+
     console.log('---- Devices From IPC ----', devices);
 
     const deviceScanResult = (
@@ -257,8 +238,6 @@ async function scanner(scanResultsArray: any, setScanResultsArray: any, setLoadi
     );
 
     await updateScanResult(scanResultsArray, setScanResultsArray, deviceScanResult);
-
-
 
     /*
         ---------OS and PORT SCAN---------
@@ -443,10 +422,8 @@ async function scanner(scanResultsArray: any, setScanResultsArray: any, setLoadi
         ---------NIST NVD API---------
     */
 
-    // TODO:
-    // -
-
-    let CVEInfo = await window.electron.ipcRenderer.scanCVE(JSON.stringify(servicesResult));
+    let CVEInfo = await callCVE(JSON.stringify(servicesResult));
+    // let CVEInfo = await window.electron.ipcRenderer.scanCVE(JSON.stringify(servicesResult));
     CVEInfo = JSON.parse(CVEInfo);
     console.log('---- CVE Results from IPC ---- ',CVEInfo);
     const randomNum = () => Math.floor(Math.random() * (235 - 52 + 1) + 52);
@@ -460,7 +437,6 @@ async function scanner(scanResultsArray: any, setScanResultsArray: any, setLoadi
     const minutes = Math.floor(seconds / 60);
     const hours = Math.floor(minutes / 60);
 
-    // const labels = ["January", "February", "March", "April", "May", "June"];
     var ipChartArr: { ip: any; totalCve: number; }[] = [];
 
     const cveScanResult = (
@@ -502,7 +478,9 @@ async function scanner(scanResultsArray: any, setScanResultsArray: any, setLoadi
                         // Check for a match
                         const matchingItem: any = servicesResult.find((result) => result[item]);
                         const ports = matchingItem ? matchingItem[item].ports : [];
-                        const os = matchingItem?.[item]?.os?.[0] ?? 'N/A'; // Nullish Coalescing operator to ensure value is not null or undefined
+
+                        // Nullish Coalescing operator to ensure value is not null or undefined
+                        const os = matchingItem?.[item]?.os?.[0] ?? 'N/A';
 
                         const randomNum = () => Math.floor(Math.random() * (235 - 52 + 1) + 52);
                         const randomRGB = () => `rgb(${randomNum()}, ${randomNum()}, ${randomNum()})`;
@@ -726,50 +704,6 @@ async function scanner(scanResultsArray: any, setScanResultsArray: any, setLoadi
                         );
                     })}
                 </div>
-                {/*/!* IP graphs *!/*/}
-                {/*{(() => {*/}
-                {/*    if (ipChartArr.length > 0) {*/}
-                {/*        if (ipChartArr.some((data) => data.totalCve > 0)) {*/}
-
-                {/*            const options = {*/}
-                {/*                plugins: {*/}
-                {/*                    title: {*/}
-                {/*                        display: true,*/}
-                {/*                        text: 'Discovered IPs With CVEs'*/}
-                {/*                    }*/}
-                {/*                }*/}
-                {/*            }*/}
-
-                {/*            // Create Service Graph data*/}
-                {/*            const pieServiceVulnsData = {*/}
-                {/*                labels: ipChartArr*/}
-                {/*                    .filter(data => data.totalCve > 0)*/}
-                {/*                    .map(data => data.ip),*/}
-                {/*                // datasets is an array of objects where each object represents a set of data to display corresponding to the labels above.*/}
-                {/*                datasets: [*/}
-                {/*                    {*/}
-                {/*                        label: 'Number of CVEs',*/}
-                {/*                        data: ipChartArr*/}
-                {/*                            .filter(data => data.totalCve > 0)*/}
-                {/*                            .map(data => data.totalCve),*/}
-                {/*                        // you can set indiviual colors for each bar*/}
-                {/*                        backgroundColor: ipChartArr*/}
-                {/*                            .filter(data => data.totalCve > 0)*/}
-                {/*                            .map(() => randomRGB()),*/}
-                {/*                        borderColor: "black",*/}
-                {/*                        borderWidth: 1,*/}
-                {/*                    }*/}
-                {/*                ]*/}
-                {/*            }*/}
-
-                {/*            return (*/}
-                {/*                <div className={'chartIpContainer'}>*/}
-                {/*                    <Pie  data={pieServiceVulnsData} options={options} className={'pieChartServiceVulns'}/>*/}
-                {/*                </div>*/}
-                {/*            )*/}
-                {/*        }*/}
-                {/*    }*/}
-                {/*})()}*/}
             </div>
             <div className={'recommendations'}>
                 <Accordion elevation={5} defaultExpanded={true}>
@@ -797,22 +731,13 @@ async function scanner(scanResultsArray: any, setScanResultsArray: any, setLoadi
                                         "cveData": serviceItem.cveData
                                     });
                                 }
-
-                                // for (const cveData of serviceItem.cveData) {
-                                //     const cveId = cveData.cveID;
-                                //     const cveBaseScore = cveData.cveBaseScore;
-                                //     const cveDesc = cveData.cveDesc;
-                                //
-                                // }
                             }
-
                             if (serviceArr.length > 0) {
                                 finalResult.push({
                                     "ip": ipAddr,
                                     "cveData": serviceArr
                                 })
                             }
-
                         }
 
                         return (
@@ -1007,12 +932,6 @@ async function scanner(scanResultsArray: any, setScanResultsArray: any, setLoadi
                             </div>
                         )
                     })()}
-
-                    {/*- These Devices have are *Vulnerable* (in red)
-                    - Suggestions if no vulnerable, else if vulnerable
-                        - Update the service to the most recent version and perform regular updates
-
-                    - View more information on each CVE at: (CVE ID url?)*/}
                 </Accordion>
             </div>
         </Paper>
@@ -1020,9 +939,12 @@ async function scanner(scanResultsArray: any, setScanResultsArray: any, setLoadi
 
     await updateScanResult(scanResultsArray, setScanResultsArray, cveScanResult);
 
-    // Create graphs
-
+    // Scan is complete, allow the button to be clicked again
     setLoading(false);
+}
+
+async function callCVE(servicesResult: string) {
+    return await window.electron.ipcRenderer.scanCVE(servicesResult)
 }
 
 async function updateScanResult(scanResultsArray: any[], setScanResultsArray: any, scanResultToUpdate: any) {
@@ -1031,24 +953,13 @@ async function updateScanResult(scanResultsArray: any[], setScanResultsArray: an
             // If scanResultsArray is empty, add the new scan result directly to the array
             return [scanResultToUpdate];
         } else {
-            // // find the index of the most recent Paper component
-            // const lastIndex = prevState.length - 1;
-            //
-            // // create a new array with the most recent Paper component updated
-            // const updatedArray = prevState.map((scanResult, index) => {
-            //     if (index === lastIndex) {
-            //         return scanResultToUpdate;
-            //     } else {
-            //         return scanResult;
-            //     }
-            // });
-            //
-            // return updatedArray;
-            // create a new array with the most recent Paper component updated
+            // Create a new array based on the updated value and existing content
             const updatedArray = prevState.map((scanResult, index) => {
                 if (index === prevState.length - 1) {
+                    // Simply returns the array item to update if the existing array is empty
                     return scanResultToUpdate;
                 } else {
+                    // Crates a new array with the item to update
                     const lastIndex = prevState.length - 1;
                     const updatedArrayy = [...prevState];
                     updatedArray[lastIndex] = scanResultToUpdate;
@@ -1058,22 +969,6 @@ async function updateScanResult(scanResultsArray: any[], setScanResultsArray: an
             return updatedArray.reverse();
         }
     });
-}
-
-function displayResults() {
-    const testComp = (
-        <Paper elevation={6} square>
-            <div>
-                Title
-            </div>
-
-            <div>
-                Acordian content
-            </div>
-        </Paper>
-    )
-
-    return testComp;
 }
 
 export default function App() {
